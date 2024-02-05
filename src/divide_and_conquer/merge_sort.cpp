@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <iostream>
+#include <time.h>
 using namespace std;
 
 class Point {
@@ -18,7 +19,12 @@ void merge(vector<Point> &A, int start, int end, int mid);
 
 int main() {
     vector<Point> points = generate_points(10);
+
+    for (int i = 0; i < 10; i++)
+        cout << "x: " << points[i].x << "\n";
     merge_sort(points, 0, 9);
+    for (int i = 0; i < 10; i++)
+        cout << "x: " << points[i].x << "\n";
 }
 
 void merge_sort(vector<Point> &A, int start, int end) {
@@ -55,15 +61,15 @@ void merge(vector<Point> &A, int start, int end, int mid) {
 vector<Point> generate_points(int n) {
     vector<Point> points(n);
 
-    srandom(time(NULL));
+    srand(time(NULL));
     const long max_rand = 1000000L;
     double lower_bound = -10000.0;
     double upper_bound = 10000.0;
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) { 
         Point p;
-        p.x = lower_bound + (upper_bound - lower_bound) * (random() % max_rand) / max_rand;
-        p.y = lower_bound + (upper_bound - lower_bound) * (random() % max_rand) / max_rand;
+        p.x = lower_bound + (upper_bound - lower_bound) * (rand() % max_rand) / max_rand;
+        p.y = lower_bound + (upper_bound - lower_bound) * (rand() % max_rand) / max_rand;
         points[i] = p;
     }
     return points;

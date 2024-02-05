@@ -37,12 +37,6 @@ int main(int argc, char** argv) {
     vector<Point> points; 
     if (world_rank == 0)    // root process generates data
         points = generate_points(N);
-    
-    if (world_rank == 0) {
-        cout << "POINTS" << endl;
-        for (int i = 0; i < N; i++)
-            cout << points[i].x << " , " << points[i].y << endl;
-    }
 
     vector<Point> local_points(N / world_size); // local buffer to store a piece of the vector
     MPI_Scatter(points.data(), N / world_size, dt_point, local_points.data(), N / world_size, dt_point, 0, MPI_COMM_WORLD);
@@ -64,13 +58,6 @@ int main(int argc, char** argv) {
         msg_size *= 2;
     }
     
-    if (world_rank == 0) {
-        cout << "SORTED POINTS" << endl;
-        for (int i = 0; i < N; i++)
-            cout << local_points[i].x << " , " << local_points[i].y << endl;
-    }
-
-
     MPI_Finalize();
     return 0;
 }
