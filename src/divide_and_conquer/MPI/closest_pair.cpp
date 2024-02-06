@@ -57,7 +57,7 @@ double min_dist(vector<Point>& x_sorted, vector<Point>& y_sorted) {
     
     // put points whose distance is at most delta from the vertical strip inside strip
     vector<Point> strip;
-    for (auto &p : y_sorted) 
+    for (auto &p : y_sorted)   
         if (p.x < median.x + delta && p.x > median.x - delta)
             strip.push_back(p);
     
