@@ -42,6 +42,10 @@ int main(int argc, char **argv) {
     vector<Point> local_x(N / world_size);
     MPI_Scatter(points.data(), N / world_size, dt_point, local_x.data(), N / world_size, dt_point, 0, MPI_COMM_WORLD);
     vector<Point> local_y = local_x;
+    sort(local_y.begin(), local_y.end(), [](Point const & a, Point const & b) -> bool
+        { return a.x < b.x; } 
+    );
+
     if (world_rank == 0)
         points.clear();
 
