@@ -49,10 +49,8 @@ int main(int argc, char **argv) {
 
     // root process holds the data
     vector<Point> points;
-    if (rank == 0) {
+    if (rank == 0)
         points = generate_points(N);
-        cout << "brute force = " << brute_force(points) << endl;
-    }
     
     parallel_merge_sort(points, rank, size, dt_point, threads);
 
@@ -64,7 +62,7 @@ int main(int argc, char **argv) {
     if (rank == 0)
         points.clear();
 
-    double local_delta;
+    double local_delta = DBL_MAX;
     {
         vector<double> delta(threads);
         vector<vector<Point>> strips(threads);
@@ -82,12 +80,15 @@ int main(int argc, char **argv) {
             );
 
             delta[thread_id] = min_dist(slice_x, slice_y); // each thread calculates their local delta
+            local_delta = delta[thread_id];
+            #pragma omp barrier
 
             if (thread_id % 2 == 0) {
                 double delta_thread = min(delta[thread_id], delta[thread_id + 1]);
                 double middle = (slice_x[slice_x.size() - 1].x + local_x[end + 1].x) / 2.0; 
                 vector<Point> strip = compute_strip(slice_y, delta_thread, middle);
                 strips[thread_id] = strip;
+
             } else {
                 double delta_thread = min(delta[thread_id], delta[thread_id - 1]);
                 double middle = (slice_x[0].x + local_x[start - 1].x) / 2.0; 
@@ -98,11 +99,14 @@ int main(int argc, char **argv) {
 
             if (thread_id % 2 == 0) {
                 vector<Point> strip = merge_two_vectors(strips[thread_id], strips[thread_id + 1], false);
-            
+                double tmp = DBL_MAX;
+
                 // for all points in strip check the next 6 points down the strip
                 for (int i = 0; i < strip.size(); i++) 
                     for (int j = i + 1; j < i + 7 && j < strip.size(); j++) 
-                        local_delta = min(local_delta, sqrt(dist(strip[i], strip[j])));
+                        tmp = min(tmp, sqrt(dist(strip[i], strip[j])));
+
+                local_delta = min(tmp, local_delta);
             }
         }
     }
@@ -136,10 +140,10 @@ int main(int argc, char **argv) {
         vector<Point> strip;
         {
             vector<Point> strip_one = compute_strip(local_y, local_delta, middle_point);
-            vector<Point> strip_two;
             int msg_size;
             MPI_Recv(&msg_size, 1 , MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strips size    
-            MPI_Recv(strip_two.data(), msg_size, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
+            vector<Point> strip_two(msg_size);
+            MPI_Recv(strip_two.data(), msg_size, dt_point, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
             strip = merge_two_vectors(strip_one, strip_two, false);
         }
 
@@ -215,9 +219,10 @@ double min_dist(vector<Point>& x_sorted, vector<Point>& y_sorted) {
 */
 vector<Point> compute_strip(vector<Point>& y_sorted, double delta, double middle) {
     vector<Point> strip;
-        for (auto &p : y_sorted) 
-            if (p.x - delta > middle && p.x + delta < middle)
+        for (auto p : y_sorted) 
+            if (fabs(middle - p.x) < delta)
                 strip.push_back(p);
+
     return strip;
 }
 
@@ -413,10 +418,11 @@ void merge_two_vectors_in_place(vector<Point> &src, vector<Point> &dst, int i, i
 */
 vector<Point> merge_two_vectors(vector<Point> &A, vector<Point> &B, bool sort_by_x) {
     int n = A.size();
-    vector<Point> C(n * 2);
+    int m = B.size();
+    vector<Point> C(n + m);
     int i = 0, j = 0, k = 0;
 
-    while (i < n && j < n) {
+    while (i < n && j < m) {
         if (sort_by_x) {
             if (A[i].x <= B[j].x)
                 C[k++] = A[i++];
@@ -431,7 +437,7 @@ vector<Point> merge_two_vectors(vector<Point> &A, vector<Point> &B, bool sort_by
     }
 
     if (i == n)
-        while (j < n)
+        while (j < m)
             C[k++] = B[j++];
     else 
         while (i < n)
