@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
             vector<Point> strip_two;
             int msg_size;
             MPI_Recv(&msg_size, 1 , MPI_INT, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strips size    
-            MPI_Recv(strip_two.data(), msg_size, MPI_DOUBLE, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
+            MPI_Recv(strip_two.data(), msg_size, dt_point, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
             strip = merge_two_vectors(strip_one, strip_two, false);
         }
 
@@ -153,7 +153,7 @@ vector<Point> compute_strip(vector<Point>& y_sorted, double delta, double middle
     return strip;
 }
 /**
- * @brief Merge vectors A and B while keeping the y-coordinates order
+ * @brief Merge vectors A and B
  * 
  * @param A The first vector
  * @param B The second vector
@@ -163,10 +163,11 @@ vector<Point> compute_strip(vector<Point>& y_sorted, double delta, double middle
 */
 vector<Point> merge_two_vectors(vector<Point> &A, vector<Point> &B, bool sort_by_x) {
     int n = A.size();
-    vector<Point> C(n * 2);
+    int m = B.size();
+    vector<Point> C(n + m);
     int i = 0, j = 0, k = 0;
 
-    while (i < n && j < n) {
+    while (i < n && j < m) {
         if (sort_by_x) {
             if (A[i].x <= B[j].x)
                 C[k++] = A[i++];
@@ -181,7 +182,7 @@ vector<Point> merge_two_vectors(vector<Point> &A, vector<Point> &B, bool sort_by
     }
 
     if (i == n)
-        while (j < n)
+        while (j < m)
             C[k++] = B[j++];
     else 
         while (i < n)
