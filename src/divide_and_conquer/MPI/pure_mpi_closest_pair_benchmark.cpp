@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
             vector<Point> strip_two;
             int msg_size;
             MPI_Recv(&msg_size, 1 , MPI_INT, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strips size    
-            MPI_Recv(strip_two.data(), msg_size, MPI_DOUBLE, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
+            MPI_Recv(strip_two.data(), msg_size, dt_point, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
             strip = merge_two_vectors(strip_one, strip_two, false);
         }
 
@@ -160,9 +160,10 @@ void parallel_merge_sort(vector<Point> &points, int rank, int size, MPI_Datatype
 */
 vector<Point> compute_strip(vector<Point>& y_sorted, double delta, double middle) {
     vector<Point> strip;
-        for (auto &p : y_sorted) 
-            if (p.x - delta > middle && p.x + delta < middle)
+        for (auto p : y_sorted) 
+            if (fabs(middle - p.x) < delta)
                 strip.push_back(p);
+
     return strip;
 }
 /**
