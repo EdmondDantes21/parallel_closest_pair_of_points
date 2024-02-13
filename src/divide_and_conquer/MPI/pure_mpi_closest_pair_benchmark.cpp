@@ -67,6 +67,12 @@ int main(int argc, char **argv) {
         MPI_Send(&middle_point, 1, MPI_DOUBLE, world_rank - 1, 0, MPI_COMM_WORLD);   // send middle point x-coordinate
 
         vector<Point> strip = compute_strip(local_y, local_delta, middle_point);
+        if (strip.size() == 0) {    // add a fake point in order to avoid send buffer equals to NONE
+            Point p;
+            p.x = DBL_MAX;
+            p.y = DBL_MAX;
+            strip.push_back(p);
+        }
         int strip_size = strip.size();
         MPI_Send(&strip_size, 1, MPI_INT, world_rank - 1, 0, MPI_COMM_WORLD);   // send strip size
         MPI_Send(strip.data(), strip.size(), dt_point, world_rank - 1, 0, MPI_COMM_WORLD);   // send strip points 
@@ -86,9 +92,9 @@ int main(int argc, char **argv) {
         vector<Point> strip;
         {
             vector<Point> strip_one = compute_strip(local_y, local_delta, middle_point);
-            vector<Point> strip_two;
             int msg_size;
             MPI_Recv(&msg_size, 1 , MPI_INT, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strips size    
+            vector<Point> strip_two(msg_size);
             MPI_Recv(strip_two.data(), msg_size, dt_point, world_rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // receive the second strip      
             strip = merge_two_vectors(strip_one, strip_two, false);
         }
